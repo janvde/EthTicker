@@ -33,12 +33,13 @@ void setup() {
   display.flipScreenVertically();
   display.clear();
   display.display();
+  displayMessage("connection failed");
 
   // We start by connecting to a WiFi network
   Serial.println();
-  Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
+  displayMessage("Connecting to WiFi");
   
   WiFi.begin(ssid, password);
   
@@ -51,10 +52,17 @@ void setup() {
   Serial.println("WiFi connected");  
   Serial.println("IP address: ");
   Serial.println(WiFi.localIP());
+  displayMessage("WiFi connected");
 }
 
 void loop() {
+  fetchPrice();
 
+  // Wait 5 seconds
+  delay(5000);
+}
+
+void fetchPrice(){
   // Connect to API
   Serial.print("connecting to ");
   Serial.println(host);
@@ -64,7 +72,7 @@ void loop() {
   const int httpPort = 443;
   if (!client.connect(host, httpPort)) {
     Serial.println("connection failed");
-    delay(5000);
+    displayMessage("connection failed");
     return;
   }
   
@@ -78,7 +86,7 @@ void loop() {
   client.print(String("GET ") + url + " HTTP/1.1\r\n" +
                "Host: " + host + "\r\n" + 
                "Connection: close\r\n\r\n");
-  delay(500);
+  delay(100);
 
   //skip headers
   while(client.available()){
@@ -99,11 +107,7 @@ void loop() {
   Serial.println();
   Serial.println("closing connection");
 
-
   displayPrice(answer);
-
-  // Wait 5 seconds
-  delay(5000);
 }
 
 void displayPrice(String answer){
@@ -120,6 +124,7 @@ void displayPrice(String answer){
   JsonObject& root_0 = root[0];
   String root_0_percent_change_1h = root_0["percent_change_1h"]; // "0.21"
   String root_0_price_eur = root_0["price_eur"]; // "873.92009892"
+  Serial.println(root_0_price_eur);
   
 
   // Display on OLED
@@ -134,7 +139,18 @@ void displayPrice(String answer){
   display.drawString(0, 14, root_0_price_eur.substring(0,7));
 
   display.setFont(ArialMT_Plain_16);
-  display.drawString(0, 46, root_0_percent_change_1h+"%");
+  display.drawString(0, 46, root_0_percent_change_1h+"% (1h)");
+    
+  display.display();
+}
+
+void displayMessage(String message){
+  display.clear();
+
+  display.setFont(ArialMT_Plain_10);
+  // The coordinates define the center of the text
+  display.setTextAlignment(TEXT_ALIGN_CENTER);
+  display.drawString(64, 22, message);
     
   display.display();
 }
